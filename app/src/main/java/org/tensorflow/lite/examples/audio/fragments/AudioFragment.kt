@@ -16,6 +16,10 @@
 
 package org.tensorflow.lite.examples.audio.fragments
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -23,6 +27,7 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.RadioGroup
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.Navigation
 import org.tensorflow.lite.examples.audio.AudioClassificationHelper
@@ -37,6 +42,34 @@ interface AudioClassificationListener {
 }
 
 class AudioFragment : Fragment() {
+    private fun sendAlertNotification() {
+        val notificationManager = requireContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val notificationId = 1
+        val channelId = "siren_alert_channel"
+        val channelName = "Siren Alert Notifications"
+
+        // Create the notification channel on API 26+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val notificationChannel = NotificationChannel(channelId, channelName, importance)
+            notificationManager.createNotificationChannel(notificationChannel)
+        }
+
+        // Create the notification
+        val notificationBuilder = NotificationCompat.Builder(requireContext(), channelId).apply {
+            setSmallIcon(R.mipmap.ic_launcher) // Ensure this is a valid icon
+            setContentTitle("Siren Detected")
+            setContentText("Alert: A siren sound has been detected!")
+            setPriority(NotificationCompat.PRIORITY_HIGH)
+            setVibrate(longArrayOf(0, 1000, 500, 1000)) // Vibration pattern for the notification
+            setAutoCancel(true)
+        }
+
+        // Notify
+        notificationManager.notify(notificationId, notificationBuilder.build())
+    }
+
     private var _fragmentBinding: FragmentAudioBinding? = null
     private val fragmentAudioBinding get() = _fragmentBinding!!
     private val adapter by lazy { ProbabilitiesAdapter() }
@@ -50,6 +83,12 @@ class AudioFragment : Fragment() {
                 adapter.notifyDataSetChanged()
                 fragmentAudioBinding.bottomSheetLayout.inferenceTimeVal.text =
                     String.format("%d ms", inferenceTime)
+
+                // Check if 'siren' is detected and send a notification
+                // The check is not case-sensitive now.
+                if (results.any { it.label.contains("siren", ignoreCase = true) && it.score > 0.8 }) {
+                    sendAlertNotification()
+                }
             }
         }
 
