@@ -86,7 +86,7 @@ class AudioFragment : Fragment() {
 
                 // Check if 'siren' is detected and send a notification
                 // The check is not case-sensitive now.
-                if (results.any { it.label.contains("siren", ignoreCase = true) && it.score > 0.8 }) {
+                if (results.any { it.label.contains("siren", ignoreCase = true) && it.score > 0.7 }) {
                     sendAlertNotification()
                 }
             }
